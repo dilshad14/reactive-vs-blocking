@@ -1,0 +1,98 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bff-svc
+  namespace: poc
+  labels:
+    app: bff-svc
+spec:
+  replicas: 4
+  selector:
+    matchLabels:
+      app: bff-svc
+  template:
+    metadata:
+      labels:
+        app: bff-svc
+    spec:
+      containers:
+      - image: docker.io/library/bff-svc:0.0.1-SNAPSHOT
+        name: bff-svc
+        ports:
+        - containerPort: 8080
+          name: http-port
+        env: 
+          - name: DUMMY
+            value: "DUMMY"
+        envFrom:
+        - configMapRef:
+            name: bff-svc-cm-1
+        volumeMounts:
+          - name: spring-vol
+            mountPath: /config
+        readinessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8080
+          initialDelaySeconds: 30
+          timeoutSeconds: 3
+          periodSeconds: 10
+          failureThreshold: 3
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "500m"
+          limits:
+            memory: "512Mi"
+            cpu: "800m"
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+      volumes:
+        - name: spring-vol
+          configMap:
+            name: bff-svc-cm-2
+
+---
+## configmap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: poc
+  name: bff-svc-cm-1
+data:
+  SERVER_PORT: "8080"
+  JAVAX_LOG_LEVEL: TRACE
+  BPL_JVM_THREAD_COUNT: "50"
+  BACKEND_SVC_URL: http://backend-svc:8080/backend/employees
+  SPRING_CONFIG_LOCATION: /config/spring_additional_config.properties
+
+---
+## configmap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: poc
+  name: bff-svc-cm-2
+data:
+  spring_additional_config.properties: |-
+    dummy.key=dummy.value
+
+---
+## bff-svc
+
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: poc
+  name: bff-svc
+spec:
+  selector:
+    app: bff-svc
+  ports:
+  - name: http-port
+    protocol: TCP
+    port: 8080
+    targetPort: http-port
+
+---

@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-svc
+  namespace: poc
+  labels:
+    app: backend-svc
+spec:
+  replicas: 4
+  selector:
+    matchLabels:
+      app: backend-svc
+  template:
+    metadata:
+      labels:
+        app: backend-svc
+    spec:
+      containers:
+      - image: docker.io/library/backend-svc:0.0.1-SNAPSHOT
+        name: backend-svc
+        ports:
+        - containerPort: 8080
+          name: http-port
+        envFrom:
+        - configMapRef:
+            name: backend-svc-cm-1
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: 8080
+          initialDelaySeconds: 30
+          timeoutSeconds: 3
+          periodSeconds: 10
+          failureThreshold: 10
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "500m"
+          limits:
+            memory: "512Mi"
+            cpu: "800m"
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+
+
+---
+## configmap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: poc
+  name: backend-svc-cm-1
+data:
+  SERVER_PORT: "8080"
+  JAVAX_LOG_LEVEL: TRACE
+  APP_RESPONSE_DELAY_MILLIS: "2500"
+  BPL_JVM_THREAD_COUNT: "50"
+  
+
+---
+## backend-svc
+
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: poc
+  name: backend-svc
+spec:
+  selector:
+    app: backend-svc
+  ports:
+  - name: http-port
+    protocol: TCP
+    port: 8080
+    targetPort: http-port
+
+---
