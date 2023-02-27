@@ -6,7 +6,7 @@ metadata:
   labels:
     app: backend-svc
 spec:
-  replicas: 4
+  replicas: 1
   selector:
     matchLabels:
       app: backend-svc
@@ -34,11 +34,11 @@ spec:
           failureThreshold: 10
         resources:
           requests:
-            memory: "256Mi"
+            memory: "512Mi"
             cpu: "500m"
           limits:
             memory: "512Mi"
-            cpu: "800m"
+            cpu: "500m"
       dnsPolicy: ClusterFirst
       restartPolicy: Always
       terminationGracePeriodSeconds: 30
@@ -53,7 +53,7 @@ metadata:
   name: backend-svc-cm-1
 data:
   SERVER_PORT: "8080"
-  JAVAX_LOG_LEVEL: TRACE
+  JAVAX_LOG_LEVEL: ERROR
   APP_RESPONSE_DELAY_MILLIS: "2500"
   BPL_JVM_THREAD_COUNT: "50"
   
